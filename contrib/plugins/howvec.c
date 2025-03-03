@@ -63,55 +63,69 @@ typedef struct {
  */
 static InsnClassExecCount aarch64_insn_classes[] = {
     /* "Reserved"" */
-    { "  UDEF",              "udef",   0xffff0000, 0x00000000, COUNT_NONE},
-    { "  SVE",               "sve",    0x1e000000, 0x04000000, COUNT_CLASS},
-    { "Reserved",            "res",    0x1e000000, 0x00000000, COUNT_CLASS},
-    /* Data Processing Immediate */
-    { "  PCrel addr",        "pcrel",  0x1f000000, 0x10000000, COUNT_CLASS},
-    { "  Add/Sub (imm,tags)", "asit",   0x1f800000, 0x11800000, COUNT_CLASS},
-    { "  Add/Sub (imm)",     "asi",    0x1f000000, 0x11000000, COUNT_CLASS},
-    { "  Logical (imm)",     "logi",   0x1f800000, 0x12000000, COUNT_CLASS},
-    { "  Move Wide (imm)",   "movwi",  0x1f800000, 0x12800000, COUNT_CLASS},
-    { "  Bitfield",          "bitf",   0x1f800000, 0x13000000, COUNT_CLASS},
-    { "  Extract",           "extr",   0x1f800000, 0x13800000, COUNT_CLASS},
-    { "Data Proc Imm",       "dpri",   0x1c000000, 0x10000000, COUNT_CLASS},
-    /* Branches */
-    { "  Cond Branch (imm)", "cndb",   0xfe000000, 0x54000000, COUNT_CLASS},
-    { "  Exception Gen",     "excp",   0xff000000, 0xd4000000, COUNT_CLASS},
-    { "    NOP",             "nop",    0xffffffff, 0xd503201f, COUNT_NONE},
-    { "  Hints",             "hint",   0xfffff000, 0xd5032000, COUNT_CLASS},
-    { "  Barriers",          "barr",   0xfffff000, 0xd5033000, COUNT_CLASS},
-    { "  PSTATE",            "psta",   0xfff8f000, 0xd5004000, COUNT_CLASS},
-    { "  System Insn",       "sins",   0xffd80000, 0xd5080000, COUNT_CLASS},
-    { "  System Reg",        "sreg",   0xffd00000, 0xd5100000, COUNT_CLASS},
-    { "  Branch (reg)",      "breg",   0xfe000000, 0xd6000000, COUNT_CLASS},
-    { "  Branch (imm)",      "bimm",   0x7c000000, 0x14000000, COUNT_CLASS},
-    { "  Cmp & Branch",      "cmpb",   0x7e000000, 0x34000000, COUNT_CLASS},
-    { "  Tst & Branch",      "tstb",   0x7e000000, 0x36000000, COUNT_CLASS},
-    { "Branches",            "branch", 0x1c000000, 0x14000000, COUNT_CLASS},
+    { "  SVE",               "sve",    0xf5000000, 0x65000000, COUNT_CLASS},
+    { "  SVE",               "sve",    0xf5000000, 0x25000000, COUNT_CLASS},
+    { "  SVE",               "sve",    0xf5000000, 0xe5000000, COUNT_CLASS},
+    { "  SVE",               "sve",    0xf5000000, 0xa5000000, COUNT_CLASS},
+    { "  SVE",               "sve",    0xf5000000, 0x05000000, COUNT_CLASS},
+    { "  SVE",               "sve",    0xf4000000, 0xa4000000, COUNT_CLASS},
+    { "  SVE",               "sve",    0xf4000000, 0xe4000000, COUNT_CLASS}, // st1b
+    { "  SVE",               "sve",    0xf4000000, 0x04000000, COUNT_CLASS},
     /* Loads and Stores */
-    { "  AdvSimd ldstmult",  "advlsm", 0xbfbf0000, 0x0c000000, COUNT_CLASS},
-    { "  AdvSimd ldstmult++", "advlsmp", 0xbfb00000, 0x0c800000, COUNT_CLASS},
-    { "  AdvSimd ldst",      "advlss", 0xbf9f0000, 0x0d000000, COUNT_CLASS},
-    { "  AdvSimd ldst++",    "advlssp", 0xbf800000, 0x0d800000, COUNT_CLASS},
-    { "  ldst excl",         "ldstx",  0x3f000000, 0x08000000, COUNT_CLASS},
-    { "    Prefetch",        "prfm",   0xff000000, 0xd8000000, COUNT_CLASS},
-    { "  Load Reg (lit)",    "ldlit",  0x1b000000, 0x18000000, COUNT_CLASS},
-    { "  ldst noalloc pair", "ldstnap", 0x3b800000, 0x28000000, COUNT_CLASS},
-    { "  ldst pair",         "ldstp",  0x38000000, 0x28000000, COUNT_CLASS},
-    { "  ldst reg",          "ldstr",  0x3b200000, 0x38000000, COUNT_CLASS},
-    { "  Atomic ldst",       "atomic", 0x3b200c00, 0x38200000, COUNT_CLASS},
-    { "  ldst reg (reg off)", "ldstro", 0x3b200b00, 0x38200800, COUNT_CLASS},
-    { "  ldst reg (pac)",    "ldstpa", 0x3b200200, 0x38200800, COUNT_CLASS},
-    { "  ldst reg (imm)",    "ldsti",  0x3b000000, 0x39000000, COUNT_CLASS},
-    { "Loads & Stores",      "ldst",   0x0a000000, 0x08000000, COUNT_CLASS},
-    /* Data Processing Register */
-    { "Data Proc Reg",       "dprr",   0x0e000000, 0x0a000000, COUNT_CLASS},
-    /* Scalar FP */
-    { "Scalar FP ",          "fpsimd", 0x0e000000, 0x0e000000, COUNT_CLASS},
+    { "  AdvSimd ldstmult",  "advlsm", 0xbfbf0000, 0x0c000000, COUNT_CLASS}, // Advanced SIMD load/store multiple
+    { "  AdvSimd ldstmult++", "advlsmp", 0xbfb00000, 0x0c800000, COUNT_CLASS}, // Advanced SIMD load/store multiple post-increment
+    { "  AdvSimd ldst",      "advlss", 0xbf9f0000, 0x0d000000, COUNT_CLASS}, // Advanced SIMD load/store single
+    { "  AdvSimd ldst++",    "advlssp", 0xbf800000, 0x0d800000, COUNT_CLASS}, // Advanced SIMD load/store single post-increment
+    { "NEON arith",          "neonarith", 0xff000000, 0x4e000000, COUNT_CLASS}, // NEON arithmetic
+    { "NEON arith",          "neonarith", 0xff000000, 0x6e000000, COUNT_CLASS}, // NEON arithmetic
+    { "NEON arith",          "neonarith", 0xff000000, 0x2e000000, COUNT_CLASS}, // NEON arithmetic
+    { "NEON arith",          "neonarith", 0xff000000, 0x5e000000, COUNT_CLASS}, // NEON arithmetic
+    { "NEON arith",          "neonarith", 0xff000000, 0x0e000000, COUNT_CLASS}, // NEON arithmetic
+    { "NEON logic",          "neonlogic", 0xff000000, 0x0f000000, COUNT_CLASS}, // NEON logic
+    { "NEON logic",          "neonlogic", 0xff000000, 0x2f000000, COUNT_CLASS}, // NEON logic
+    { "NEON logic",          "neonlogic", 0xff000000, 0x4f000000, COUNT_CLASS}, // NEON logic
+    { "NEON logic",          "neonlogic", 0xff000000, 0x6f000000, COUNT_CLASS}, // NEON logic
+    // Add more as needed
     /* Unclassified */
     { "Unclassified",        "unclas", 0x00000000, 0x00000000, COUNT_CLASS},
 };
+
+
+static InsnClassExecCount riscv_insn_classes[] = {
+    // { "flw/fld",                            "addi",  0x0000007f, 0x00000007, COUNT_CLASS},
+    // { "fsw/fsd",                            "addi",  0x0000007f, 0x00000027, COUNT_CLASS},
+    // { "branch",                             "addi",  0x00000073, 0x00000063, COUNT_CLASS},
+    // { "Fence",                              "addi",  0x0000007f, 0x0000000f, COUNT_CLASS},
+    // { "Csr",                                "addi",  0x0000007f, 0x00000073, COUNT_CLASS},
+    // { "lb",                                 "addi",  0x0000707f, 0x00000003, COUNT_CLASS},
+    // { "lh",                                 "addi",  0x0000707f, 0x00001003, COUNT_CLASS},
+    // { "lw",                                 "addi",  0x0000707f, 0x00002003, COUNT_CLASS},
+    // { "ld",                                 "addi",  0x0000707f, 0x00003003, COUNT_CLASS},
+    // { "lbu",                                "addi",  0x0000707f, 0x00004003, COUNT_CLASS},
+    // { "lhu",                                "addi",  0x0000707f, 0x00005003, COUNT_CLASS},
+    // { "lwu",                                "addi",  0x0000707f, 0x00006003, COUNT_CLASS},
+    // { "sb",                                 "addi",  0x0000707f, 0x00000023, COUNT_CLASS},
+    // { "sh",                                 "addi",  0x0000707f, 0x00001023, COUNT_CLASS},
+    // { "sw",                                 "addi",  0x0000707f, 0x00002023, COUNT_CLASS},
+    // { "sd",                                 "addi",  0x0000707f, 0x00003023, COUNT_CLASS},
+    { "vector load",                         "addi",  0x0000007f, 0x00000007, COUNT_CLASS},
+    { "vector store",                        "addi",  0x0000007f, 0x00000027, COUNT_CLASS},
+    { "vector Arithmetic & Configuration",    "addi",  0x0000007f, 0x00000057, COUNT_CLASS},
+    { "th.ldd",                             "addi",  0xf800707f, 0xf800400b, COUNT_CLASS},
+    { "th.lwd",                             "addi",  0xf800707f, 0xe000400b, COUNT_CLASS},
+    { "th.lwud",                            "addi",  0xf800707f, 0xf000400b, COUNT_CLASS},
+    { "th.sdd",                             "addi",  0xf800707f, 0xf800500b, COUNT_CLASS},
+    { "th.swd",                             "addi",  0xf800707f, 0xe000500b, COUNT_CLASS},
+    { "sh1add",                             "addi",  0xfe00707f, 0x20002033, COUNT_CLASS},
+    { "sh1add.uw",                          "addi",  0xfe00707f, 0x2000203b, COUNT_CLASS},
+    { "sh2add",                             "addi",  0xfe00707f, 0x20004033, COUNT_CLASS},
+    { "sh2add.uw",                          "addi",  0xfe00707f, 0x2000403b, COUNT_CLASS},
+    { "sh3add",                             "addi",  0xfe00707f, 0x20006033, COUNT_CLASS},
+    { "sh3add.uw",                          "addi",  0xfe00707f, 0x2000603b, COUNT_CLASS},
+    /* Unclassified */
+    { "Unclassified",                       "unclas", 0x00000000, 0x00000000, COUNT_CLASS},
+};
+
 
 static InsnClassExecCount sparc32_insn_classes[] = {
     { "Call",                "call",   0xc0000000, 0x40000000, COUNT_CLASS},
@@ -147,6 +161,7 @@ typedef struct {
 
 static ClassSelector class_tables[] = {
     { "aarch64", aarch64_insn_classes, ARRAY_SIZE(aarch64_insn_classes) },
+    { "riscv64", riscv_insn_classes, ARRAY_SIZE(riscv_insn_classes) },
     { "sparc",   sparc32_insn_classes, ARRAY_SIZE(sparc32_insn_classes) },
     { "sparc64", sparc64_insn_classes, ARRAY_SIZE(sparc64_insn_classes) },
     { NULL, default_insn_classes, ARRAY_SIZE(default_insn_classes) },
