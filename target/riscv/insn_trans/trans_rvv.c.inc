@@ -3782,3 +3782,83 @@ GEN_INT_EXT_TRANS(vzext_vf8, 3, 2)
 GEN_INT_EXT_TRANS(vsext_vf2, 1, 3)
 GEN_INT_EXT_TRANS(vsext_vf4, 2, 4)
 GEN_INT_EXT_TRANS(vsext_vf8, 3, 5)
+
+
+// Check function for every reverse instructions
+static bool vrev_check(DisasContext *s, arg_rmr *a)
+{
+    return require_rvv(s) &&
+           vext_check_isa_ill(s) &&
+           vext_check_ss(s, a->rd, a->rs2, a->vm);
+}
+
+static void finalize_rvv_inst(DisasContext *ctx)
+{
+    mark_vs_dirty(ctx);
+}
+
+// Generate translation function for every reverse instructions
+#define GEN_VREV_TRANS(NAME)                                           \
+bool trans_##NAME(DisasContext *s, arg_##NAME *a)                      \
+{                                                                      \
+    if (!vrev_check(s, a)) {                                           \
+        return false;                                                  \
+    }                                                                  \
+    gen_helper_gvec_3_ptr *fn = gen_helper_##NAME;                     \
+    uint32_t data = 0;                                                 \
+    data = FIELD_DP32(data, VDATA, LMUL, s->lmul);                     \
+                                                                        \
+    tcg_gen_gvec_3_ptr(vreg_ofs(s, a->rd), vreg_ofs(s, 0),             \
+                        vreg_ofs(s, a->rs2), cpu_env,                  \
+                        s->cfg_ptr->vlenb, s->cfg_ptr->vlenb,          \
+                        data, fn);                                     \
+                                                                        \
+    finalize_rvv_inst(s);                                              \
+    return true;                                                       \
+}
+
+/* Generate translation functions for each instruction */
+/* 8-bit reverse instructions */
+GEN_VREV_TRANS(vrev8m1_i)
+GEN_VREV_TRANS(vrev8m2_i)
+GEN_VREV_TRANS(vrev8m4_i)
+GEN_VREV_TRANS(vrev8m8_i)
+GEN_VREV_TRANS(vrev8mf2_i)
+GEN_VREV_TRANS(vrev8mf4_i)
+GEN_VREV_TRANS(vrev8mf8_i)
+
+/* 16-bit reverse instructions */
+GEN_VREV_TRANS(vrev16m1_i)
+GEN_VREV_TRANS(vrev16m1_f)
+GEN_VREV_TRANS(vrev16m2_i)
+GEN_VREV_TRANS(vrev16m2_f)
+GEN_VREV_TRANS(vrev16m4_i)
+GEN_VREV_TRANS(vrev16m4_f)
+GEN_VREV_TRANS(vrev16m8_i)
+GEN_VREV_TRANS(vrev16m8_f)
+GEN_VREV_TRANS(vrev16mf4_i)
+GEN_VREV_TRANS(vrev16mf4_f)
+GEN_VREV_TRANS(vrev16mf2_i)
+GEN_VREV_TRANS(vrev16mf2_f)
+
+/* 32-bit reverse instructions */
+GEN_VREV_TRANS(vrev32m1_i)
+GEN_VREV_TRANS(vrev32m1_f)
+GEN_VREV_TRANS(vrev32m2_i)
+GEN_VREV_TRANS(vrev32m2_f)
+GEN_VREV_TRANS(vrev32m4_i)
+GEN_VREV_TRANS(vrev32m4_f)
+GEN_VREV_TRANS(vrev32m8_i)
+GEN_VREV_TRANS(vrev32m8_f)
+GEN_VREV_TRANS(vrev32mf2_i)
+GEN_VREV_TRANS(vrev32mf2_f)
+
+/* 64-bit reverse instructions */
+GEN_VREV_TRANS(vrev64m1_i)
+GEN_VREV_TRANS(vrev64m1_f)
+GEN_VREV_TRANS(vrev64m2_i)
+GEN_VREV_TRANS(vrev64m2_f)
+GEN_VREV_TRANS(vrev64m4_i)
+GEN_VREV_TRANS(vrev64m4_f)
+GEN_VREV_TRANS(vrev64m8_i)
+GEN_VREV_TRANS(vrev64m8_f)

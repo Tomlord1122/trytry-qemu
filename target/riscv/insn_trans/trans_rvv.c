@@ -3784,9 +3784,6 @@ GEN_INT_EXT_TRANS(vsext_vf4, 2, 4)
 GEN_INT_EXT_TRANS(vsext_vf8, 3, 5)
 
 
-// Custom Instructions (VREV)
-
-
 // Check function for every reverse instructions
 static bool vrev_check(DisasContext *s, arg_rmr *a)
 {
@@ -3795,28 +3792,31 @@ static bool vrev_check(DisasContext *s, arg_rmr *a)
            vext_check_ss(s, a->rd, a->rs2, a->vm);
 }
 
+static void finalize_rvv_inst(DisasContext *ctx)
+{
+    mark_vs_dirty(ctx);
+    // ctx->vstart = true;
+}
+
 // Generate translation function for every reverse instructions
-#define GEN_VREV_TRANS(NAME)                \
-    bool trans_##NAME(DisasContext *s, arg_##NAME *a)                      \
-    {                                                                      \
-        if (!vrev_check(s, a)) {                                          \
-            return false;                                                  \
-        }                                                                  \
-        uint32_t data = 0;                                                \
-        data = FIELD_DP32(data, VDATA, VM, a->vm);                     \
-        data = FIELD_DP32(data, VDATA, LMUL, s->lmul);                 \
-        data = FIELD_DP32(data, VDATA, VTA, s->vta);                   \
-        data = FIELD_DP32(data, VDATA, VTA_ALL_1S, s->cfg_vta_all_1s); \
-        data = FIELD_DP32(data, VDATA, VMA, s->vma);                   \
-                                                                          \
-        tcg_gen_gvec_3_ptr(vreg_ofs(s, a->rd), vreg_ofs(s, 0),            \
-                          vreg_ofs(s, a->rs2), tcg_env,                  \
-                          s->cfg_ptr->vlenb, s->cfg_ptr->vlenb,           \
-                          data, gen_helper_##NAME);                 \
-                                                                    \
-        finalize_rvv_inst(s);                                            \
-        return true;                                                      \
-    }
+#define GEN_VREV_TRANS(NAME)                                           \
+bool trans_##NAME(DisasContext *s, arg_##NAME *a)                      \
+{                                                                      \
+    if (!vrev_check(s, a)) {                                           \
+        return false;                                                  \
+    }                                                                  \
+    gen_helper_gvec_3_ptr *fn = gen_helper_##NAME;                     \
+    uint32_t data = 0;                                                 \
+    data = FIELD_DP32(data, VDATA, LMUL, s->lmul);                     \
+                                                                        \
+    tcg_gen_gvec_3_ptr(vreg_ofs(s, a->rd), vreg_ofs(s, 0),             \
+                        vreg_ofs(s, a->rs2), cpu_env,                  \
+                        s->cfg_ptr->vlenb, s->cfg_ptr->vlenb,          \
+                        data, fn);                                     \
+                                                                        \
+    finalize_rvv_inst(s);                                              \
+    return true;                                                       \
+}
 
 /* Generate translation functions for each instruction */
 /* 8-bit reverse instructions */

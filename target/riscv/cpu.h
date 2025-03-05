@@ -503,6 +503,7 @@ struct RISCVCPUConfig {
     char *bext_spec;
     char *vext_spec;
     uint16_t vlen;
+    uint16_t vlenb;
     uint16_t elen;
     uint16_t cbom_blocksize;
     uint16_t cboz_blocksize;

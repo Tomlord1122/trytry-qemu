@@ -1144,22 +1144,6 @@ DEF_HELPER_FLAGS_3(sm4ed, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl)
 DEF_HELPER_FLAGS_3(sm4ks, TCG_CALL_NO_RWG_SE, tl, tl, tl, tl)
 
 
-
-// DEF_HELPER_5(vrev8_v_b, void, ptr, ptr, ptr, env, i32)
-// DEF_HELPER_5(vrev8_v_h, void, ptr, ptr, ptr, env, i32)
-// DEF_HELPER_5(vrev8_v_w, void, ptr, ptr, ptr, env, i32)
-// DEF_HELPER_5(vrev8_v_d, void, ptr, ptr, ptr, env, i32)
-// DEF_HELPER_5(vbrev8_v_b, void, ptr, ptr, ptr, env, i32)
-// DEF_HELPER_5(vbrev8_v_h, void, ptr, ptr, ptr, env, i32)
-// DEF_HELPER_5(vbrev8_v_w, void, ptr, ptr, ptr, env, i32)
-// DEF_HELPER_5(vbrev8_v_d, void, ptr, ptr, ptr, env, i32)
-// DEF_HELPER_5(vbrev_v_b, void, ptr, ptr, ptr, env, i32)
-// DEF_HELPER_5(vbrev_v_h, void, ptr, ptr, ptr, env, i32)
-// DEF_HELPER_5(vbrev_v_w, void, ptr, ptr, ptr, env, i32)
-// DEF_HELPER_5(vbrev_v_d, void, ptr, ptr, ptr, env, i32)
-
-
-
 DEF_HELPER_5(vrev8m1_i, void, ptr, ptr, ptr, env, i32)
 DEF_HELPER_5(vrev8m2_i, void, ptr, ptr, ptr, env, i32)
 DEF_HELPER_5(vrev8m4_i, void, ptr, ptr, ptr, env, i32)
