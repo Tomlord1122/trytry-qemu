@@ -5298,7 +5298,13 @@ GEN_VEXT_INT_EXT(vsext_vf4_w, int32_t, int8_t,  H4, H1)
 GEN_VEXT_INT_EXT(vsext_vf4_d, int64_t, int16_t, H8, H2)
 GEN_VEXT_INT_EXT(vsext_vf8_d, int64_t, int8_t,  H8, H1)
 
-#define DO_IDENTITY(a) (a)
+
+#define VSTART_CHECK_EARLY_EXIT(env) do { \
+    if (env->vstart >= env->vl) {         \
+        env->vstart = 0;                  \
+        return;                           \
+    }                                     \
+} while (0)
 
 #define OP_UU_B uint8_t, uint8_t, uint8_t
 #define OP_UU_H uint16_t, uint16_t, uint16_t
@@ -5312,109 +5318,96 @@ static void do_##NAME(void *vd, void *vs2, int i, uint32_t vl)      \
     *((TD *)vd + HD(i)) = s2;                          \
 }
 
-#define GEN_VEXT_V_ELEM_REV(NAME)                       \
+#define GEN_VEXT_V_ELEM_REV(NAME, ESZ)                       \
 void HELPER(NAME)(void *vd, void *v0, void *vs2,       \
                   CPURISCVState *env, uint32_t desc)   \
 {                                                      \
+    uint32_t vm = vext_vm(desc);                       \
     uint32_t vl = env->vl;                             \
+    uint32_t total_elems =                             \
+        vext_get_total_elems(env, desc, ESZ);          \
+    uint32_t vta = vext_vta(desc);                     \
+    uint32_t vma = vext_vma(desc);                     \
     uint32_t i;                                        \
                                                        \
+    VSTART_CHECK_EARLY_EXIT(env);                      \
+                                                       \
     for (i = env->vstart; i < vl; i++) {               \
+        if (!vm && !vext_elem_mask(v0, i)) {           \
+            /* set masked-off elements to 1s */        \
+            vext_set_elems_1s(vd, vma, i * ESZ,        \
+                              (i + 1) * ESZ);          \
+            continue;                                  \
+        }                                              \
         do_##NAME(vd, vs2, i, vl);                     \
     }                                                  \
     env->vstart = 0;                                   \
+    /* set tail elements to 1s */                      \
+    vext_set_elems_1s(vd, vta, vl * ESZ,               \
+                      total_elems * ESZ);              \
 }
 
 /* 8-bit reverse instructions */
-RVVCALL(OPIVV1_ELEM_REV, vrev8m1_i, OP_UU_B, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev8m2_i, OP_UU_B, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev8m4_i, OP_UU_B, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev8m8_i, OP_UU_B, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev8mf2_i, OP_UU_B, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev8mf4_i, OP_UU_B, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev8mf8_i, OP_UU_B, H1, H1)
+// Expand into OPIVV1_ELEN_REV(vrev8m1, uint8_t, uint8_t, uint8_t, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev8m1, OP_UU_B, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev8m2, OP_UU_B, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev8m4, OP_UU_B, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev8m8, OP_UU_B, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev8mf2, OP_UU_B, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev8mf4, OP_UU_B, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev8mf8, OP_UU_B, H1, H1)
 
 /* 16-bit reverse instructions */
-RVVCALL(OPIVV1_ELEM_REV, vrev16m1_i, OP_UU_H, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev16m1_f, OP_UU_H, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev16m2_i, OP_UU_H, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev16m2_f, OP_UU_H, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev16m4_i, OP_UU_H, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev16m4_f, OP_UU_H, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev16m8_i, OP_UU_H, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev16m8_f, OP_UU_H, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev16mf4_i, OP_UU_H, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev16mf4_f, OP_UU_H, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev16mf2_i, OP_UU_H, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev16mf2_f, OP_UU_H, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev16m1, OP_UU_H, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev16m2, OP_UU_H, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev16m4, OP_UU_H, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev16m8, OP_UU_H, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev16mf4, OP_UU_H, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev16mf2, OP_UU_H, H1, H1)
 
 /* 32-bit reverse instructions */
-RVVCALL(OPIVV1_ELEM_REV, vrev32m1_i, OP_UU_W, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev32m1_f, OP_UU_W, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev32m2_i, OP_UU_W, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev32m2_f, OP_UU_W, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev32m4_i, OP_UU_W, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev32m4_f, OP_UU_W, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev32m8_i, OP_UU_W, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev32m8_f, OP_UU_W, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev32mf2_i, OP_UU_W, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev32mf2_f, OP_UU_W, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev32m1, OP_UU_W, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev32m2, OP_UU_W, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev32m4, OP_UU_W, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev32m8, OP_UU_W, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev32mf2, OP_UU_W, H1, H1)
 
 /* 64-bit reverse instructions */
-RVVCALL(OPIVV1_ELEM_REV, vrev64m1_i, OP_UU_D, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev64m1_f, OP_UU_D, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev64m2_i, OP_UU_D, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev64m2_f, OP_UU_D, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev64m4_i, OP_UU_D, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev64m4_f, OP_UU_D, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev64m8_i, OP_UU_D, H1, H1)
-RVVCALL(OPIVV1_ELEM_REV, vrev64m8_f, OP_UU_D, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev64m1, OP_UU_D, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev64m2, OP_UU_D, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev64m4, OP_UU_D, H1, H1)
+RVVCALL(OPIVV1_ELEM_REV, vrev64m8, OP_UU_D, H1, H1)
 
 /* Generate helper functions for all reverse instructions */
 /* 8-bit reverse helpers */
-GEN_VEXT_V_ELEM_REV(vrev8m1_i)
-GEN_VEXT_V_ELEM_REV(vrev8m2_i)
-GEN_VEXT_V_ELEM_REV(vrev8m4_i)
-GEN_VEXT_V_ELEM_REV(vrev8m8_i)
-GEN_VEXT_V_ELEM_REV(vrev8mf2_i)
-GEN_VEXT_V_ELEM_REV(vrev8mf4_i)
-GEN_VEXT_V_ELEM_REV(vrev8mf8_i)
+GEN_VEXT_V_ELEM_REV(vrev8m1, 1)
+GEN_VEXT_V_ELEM_REV(vrev8m2, 1)
+GEN_VEXT_V_ELEM_REV(vrev8m4, 1)
+GEN_VEXT_V_ELEM_REV(vrev8m8, 1)
+GEN_VEXT_V_ELEM_REV(vrev8mf2, 1)
+GEN_VEXT_V_ELEM_REV(vrev8mf4, 1)
+GEN_VEXT_V_ELEM_REV(vrev8mf8, 1)
 
 /* 16-bit reverse helpers */
-GEN_VEXT_V_ELEM_REV(vrev16m1_i)
-GEN_VEXT_V_ELEM_REV(vrev16m1_f)
-GEN_VEXT_V_ELEM_REV(vrev16m2_i)
-GEN_VEXT_V_ELEM_REV(vrev16m2_f)
-GEN_VEXT_V_ELEM_REV(vrev16m4_i)
-GEN_VEXT_V_ELEM_REV(vrev16m4_f)
-GEN_VEXT_V_ELEM_REV(vrev16m8_i)
-GEN_VEXT_V_ELEM_REV(vrev16m8_f)
-GEN_VEXT_V_ELEM_REV(vrev16mf4_i)
-GEN_VEXT_V_ELEM_REV(vrev16mf4_f)
-GEN_VEXT_V_ELEM_REV(vrev16mf2_i)
-GEN_VEXT_V_ELEM_REV(vrev16mf2_f)
+GEN_VEXT_V_ELEM_REV(vrev16m1, 2)
+GEN_VEXT_V_ELEM_REV(vrev16m2, 2)
+GEN_VEXT_V_ELEM_REV(vrev16m4, 2)
+GEN_VEXT_V_ELEM_REV(vrev16m8, 2)
+GEN_VEXT_V_ELEM_REV(vrev16mf4, 2)
+GEN_VEXT_V_ELEM_REV(vrev16mf2, 2)
 
 /* 32-bit reverse helpers */
-GEN_VEXT_V_ELEM_REV(vrev32m1_i)
-GEN_VEXT_V_ELEM_REV(vrev32m1_f)
-GEN_VEXT_V_ELEM_REV(vrev32m2_i)
-GEN_VEXT_V_ELEM_REV(vrev32m2_f)
-GEN_VEXT_V_ELEM_REV(vrev32m4_i)
-GEN_VEXT_V_ELEM_REV(vrev32m4_f)
-GEN_VEXT_V_ELEM_REV(vrev32m8_i)
-GEN_VEXT_V_ELEM_REV(vrev32m8_f)
-GEN_VEXT_V_ELEM_REV(vrev32mf2_i)
-GEN_VEXT_V_ELEM_REV(vrev32mf2_f)
+GEN_VEXT_V_ELEM_REV(vrev32m1, 4)
+GEN_VEXT_V_ELEM_REV(vrev32m2, 4)
+GEN_VEXT_V_ELEM_REV(vrev32m4, 4)
+GEN_VEXT_V_ELEM_REV(vrev32m8, 4)
+GEN_VEXT_V_ELEM_REV(vrev32mf2, 4)
 
 /* 64-bit reverse helpers */
-GEN_VEXT_V_ELEM_REV(vrev64m1_i)
-GEN_VEXT_V_ELEM_REV(vrev64m1_f)
-GEN_VEXT_V_ELEM_REV(vrev64m2_i)
-GEN_VEXT_V_ELEM_REV(vrev64m2_f)
-GEN_VEXT_V_ELEM_REV(vrev64m4_i)
-GEN_VEXT_V_ELEM_REV(vrev64m4_f)
-GEN_VEXT_V_ELEM_REV(vrev64m8_i)
-GEN_VEXT_V_ELEM_REV(vrev64m8_f)
+GEN_VEXT_V_ELEM_REV(vrev64m1, 8)
+GEN_VEXT_V_ELEM_REV(vrev64m2, 8)
+GEN_VEXT_V_ELEM_REV(vrev64m4, 8)
+GEN_VEXT_V_ELEM_REV(vrev64m8, 8)
 
 
 
