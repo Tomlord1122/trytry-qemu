@@ -1,0 +1,10 @@
+CompileFlags:
+    Add: [
+        -I/Users/tomlord/workspace/acedamic/llvm-project/llvm/include/,
+        -I/home/tomlord/workspace/Tom/llvm-project/llvm/include/,
+        -I/home/tomlord/workspace/qemu/include,
+    ]
+
+
+Diagnostics:
+  Suppress: '*'
