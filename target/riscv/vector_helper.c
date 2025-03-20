@@ -27,6 +27,8 @@
 #include "tcg/tcg-gvec-desc.h"
 #include "internals.h"
 #include <math.h>
+#include <stdio.h>
+
 
 target_ulong HELPER(vsetvl)(CPURISCVState *env, target_ulong s1,
                             target_ulong s2)
@@ -5312,35 +5314,48 @@ GEN_VEXT_INT_EXT(vsext_vf8_d, int64_t, int8_t,  H8, H1)
 #define OP_UU_D uint64_t, uint64_t, uint64_t
 
 #define OPIVV1_ELEM_REV(NAME, TD, T2, TX2, HD, HS2)         \
-static void do_##NAME(void *vd, void *vs2, int i, uint32_t vl)      \
-{                                                      \
-    TX2 s2 = *((T2 *)vs2 + HS2(vl - 1 - i));           \
-    *((TD *)vd + HD(i)) = s2;                          \
+static void do_##NAME(void *vd, void *vs2, int i, uint32_t vl)  \
+{                                                            \
+    printf("vd: %p\n", vd);                                  \
+    printf("vs2: %p\n", vs2);                                \
+    printf("i: %d\n", i);                                    \
+    printf("vl: %u\n", vl);                                  \
+    TX2 s2 = *((T2 *)vs2 + HS2(vl - 1 - i));                 \
+    *((TD *)vd + HD(i)) = s2;                                \
+    /* Use type-appropriate format specifiers */             \
+    printf("size of the element: %lu\n", sizeof(TX2) * 8);     \
+    if (sizeof(TX2) == 1) {                                  \
+        printf("s2: %u\n", (unsigned int)s2);                \
+        printf("vd: %u\n", (unsigned int)*((TD *)vd + HD(i))); \
+    } else if (sizeof(TX2) == 2) {                           \
+        printf("s2: %u\n", (unsigned int)s2);                \
+        printf("vd: %u\n", (unsigned int)*((TD *)vd + HD(i))); \
+    } else if (sizeof(TX2) == 4) {                           \
+        printf("s2: %u\n", (unsigned int)s2);                \
+        printf("vd: %u\n", (unsigned int)*((TD *)vd + HD(i))); \
+    } else {                                                 \
+        printf("s2: %lu\n", (unsigned long)s2);              \
+        printf("vd: %lu\n", (unsigned long)*((TD *)vd + HD(i))); \
+    }                                                        \
+    printf("============================\n");                \
 }
 
 #define GEN_VEXT_V_ELEM_REV(NAME, ESZ)                       \
-void HELPER(NAME)(void *vd, void *v0, void *vs2,       \
+void HELPER(NAME)(void *vd, void *vs2,       \
                   CPURISCVState *env, uint32_t desc)   \
 {                                                      \
-    uint32_t vm = vext_vm(desc);                       \
     uint32_t vl = env->vl;                             \
     uint32_t total_elems =                             \
         vext_get_total_elems(env, desc, ESZ);          \
     uint32_t vta = vext_vta(desc);                     \
-    uint32_t vma = vext_vma(desc);                     \
     uint32_t i;                                        \
-                                                       \
+    printf("vl: %u, total_elems: %u, vta: %u\n", vl, total_elems, vta); \
     VSTART_CHECK_EARLY_EXIT(env);                      \
                                                        \
     for (i = env->vstart; i < vl; i++) {               \
-        if (!vm && !vext_elem_mask(v0, i)) {           \
-            /* set masked-off elements to 1s */        \
-            vext_set_elems_1s(vd, vma, i * ESZ,        \
-                              (i + 1) * ESZ);          \
-            continue;                                  \
-        }                                              \
         do_##NAME(vd, vs2, i, vl);                     \
     }                                                  \
+    printf("---------reverse complete--------\n");                \
     env->vstart = 0;                                   \
     /* set tail elements to 1s */                      \
     vext_set_elems_1s(vd, vta, vl * ESZ,               \
