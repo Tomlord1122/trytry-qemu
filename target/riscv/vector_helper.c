@@ -5331,44 +5331,28 @@ void HELPER(NAME)(void *vd, void *vs2,                       \
     uint32_t i;                                              \
     VSTART_CHECK_EARLY_EXIT(env);                            \
                                                              \
-    /* 檢查 vd 和 vs2 是否指向同一個地址 */                   \
     if (vd == vs2) {                                         \
-        /* 分配臨時緩衝區 */                                   \
         void *temp_buf = malloc(vl * ESZ);                   \
         if (!temp_buf) {                                     \
-            /* 處理記憶體分配失敗，例如記錄錯誤或拋出異常 */       \
             fprintf(stderr, "Error: Failed to allocate temporary buffer in %s\n", #NAME); \
             return;                                          \
         }                                                    \
                                                              \
-        /* 階段一：從 vs2 讀取反轉後的元素到 temp_buf */         \
         for (i = env->vstart; i < vl; i++) {                 \
-            /* 計算源元素的地址 */                              \
             void *src_elem_ptr = (char *)vs2 + (vl - 1 - i) * ESZ; \
-            /* 計算臨時緩衝區中目標元素的地址 */                   \
             void *temp_dst_ptr = (char *)temp_buf + i * ESZ; \
-            /* 複製元素 */                                     \
             memcpy(temp_dst_ptr, src_elem_ptr, ESZ);         \
         }                                                    \
                                                              \
-        /* 階段二：將 temp_buf 的內容寫回 vd */               \
         for (i = env->vstart; i < vl; i++) {                 \
-            /* 計算臨時緩衝區中源元素的地址 */                   \
             void *temp_src_ptr = (char *)temp_buf + i * ESZ; \
-            /* 計算目標寄存器中目標元素的地址 */                   \
             void *dst_elem_ptr = (char *)vd + i * ESZ;       \
-            /* 複製元素 */                                     \
             memcpy(dst_elem_ptr, temp_src_ptr, ESZ);         \
         }                                                    \
                                                              \
-        /* 釋放臨時緩衝區 */                                   \
         free(temp_buf);                                      \
     } else {                                                 \
-        /* 如果 vd 和 vs2 不同，使用原有的邏輯 */                \
         for (i = env->vstart; i < vl; i++) {                 \
-            /* 注意：這裡假設 do_##NAME 存在且處理單個元素 */    \
-            /* 您需要確保 OPIVV1_ELEM_REV 宏和 RVVCALL 宏 */ \
-            /* 正確定義了 do_##NAME 函數 */                  \
             do_##NAME(vd, vs2, i, vl);                       \
         }                                                    \
     }                                                        \
