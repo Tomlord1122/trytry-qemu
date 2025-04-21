@@ -5328,40 +5328,74 @@ void HELPER(NAME)(void *vd, void *vs2,                       \
     uint32_t total_elems =                                   \
         vext_get_total_elems(env, desc, ESZ);                \
     uint32_t vta = vext_vta(desc);                           \
+    uint32_t vstart = env->vstart; /* Cache vstart */        \
     uint32_t i;                                              \
-    VSTART_CHECK_EARLY_EXIT(env);                            \
+                                                             \
+    /* Check vstart early. If vstart >= vl, nothing to do. */ \
+    if (vstart >= vl) {                                      \
+        env->vstart = 0;                                     \
+        return;                                              \
+    }                                                        \
                                                              \
     if (vd == vs2) {                                         \
-        void *temp_buf = malloc(vl * ESZ);                   \
+        /* Handle overlapping case with a temporary buffer */ \
+        size_t elem_size = (size_t)ESZ;                      \
+        size_t num_elems = (size_t)vl;                       \
+        size_t buf_size = num_elems * elem_size;             \
+                                                             \
+        /* Basic sanity check: ensure buf_size calculation didn't overflow */ \
+        /* and vl is not zero (though caught by vstart check if vstart=0) */ \
+        if (vl == 0 || (elem_size > 0 && buf_size / elem_size != num_elems)) { \
+            fprintf(stderr, "Error: Invalid size calculation in %s (vl=%u, ESZ=%u)\n", \
+                    #NAME, vl, ESZ); \
+            /* Here, we might want to signal an illegal instruction to the guest */ \
+            /* For now, just return to avoid crashing QEMU */ \
+            return; \
+        } \
+                                                             \
+        void *temp_buf = malloc(buf_size);                   \
         if (!temp_buf) {                                     \
-            fprintf(stderr, "Error: Failed to allocate temporary buffer in %s\n", #NAME); \
+            fprintf(stderr, "Error: Failed to allocate %zu bytes temporary buffer in %s\n", \
+                    buf_size, #NAME); \
+            /* Signal error or return */ \
             return;                                          \
         }                                                    \
                                                              \
-        for (i = env->vstart; i < vl; i++) {                 \
-            void *src_elem_ptr = (char *)vs2 + (vl - 1 - i) * ESZ; \
-            void *temp_dst_ptr = (char *)temp_buf + i * ESZ; \
-            memcpy(temp_dst_ptr, src_elem_ptr, ESZ);         \
+        /* Loop 1: Copy elements from vs2 (source) to temp_buf in reversed order */ \
+        /* Only copy elements from index vstart to vl-1 */   \
+        for (i = vstart; i < vl; i++) {                      \
+            /* Calculate source index (reversed) */          \
+            size_t src_idx = (size_t)(vl - 1 - i);           \
+            /* Calculate pointers */                         \
+            void *src_elem_ptr = (char *)vs2 + src_idx * elem_size; \
+            void *temp_dst_ptr = (char *)temp_buf + (size_t)i * elem_size; \
+            /* TODO: Add optional bounds checks here if needed for deep debug */ \
+            memcpy(temp_dst_ptr, src_elem_ptr, elem_size);   \
         }                                                    \
                                                              \
-        for (i = env->vstart; i < vl; i++) {                 \
-            void *temp_src_ptr = (char *)temp_buf + i * ESZ; \
-            void *dst_elem_ptr = (char *)vd + i * ESZ;       \
-            memcpy(dst_elem_ptr, temp_src_ptr, ESZ);         \
+        /* Loop 2: Copy elements from temp_buf back to vd (destination) */ \
+        /* Only copy elements from index vstart to vl-1 */   \
+        for (i = vstart; i < vl; i++) {                      \
+            /* Calculate pointers */                         \
+            void *temp_src_ptr = (char *)temp_buf + (size_t)i * elem_size; \
+            void *dst_elem_ptr = (char *)vd + (size_t)i * elem_size; \
+            /* TODO: Add optional bounds checks here */      \
+            memcpy(dst_elem_ptr, temp_src_ptr, elem_size);   \
         }                                                    \
                                                              \
-        free(temp_buf);                                      \
+        free(temp_buf); /* Free the buffer */                \
     } else {                                                 \
-        for (i = env->vstart; i < vl; i++) {                 \
+        /* Non-overlapping case: direct copy */              \
+        for (i = vstart; i < vl; i++) {                      \
+            /* Use the pre-defined single-element copy function */ \
             do_##NAME(vd, vs2, i, vl);                       \
         }                                                    \
     }                                                        \
                                                              \
-    /* printf("---------reverse complete--------\n"); */     \
-    env->vstart = 0;                                         \
-    /* set tail elements to 1s */                            \
-    vext_set_elems_1s(vd, vta, vl * ESZ,                     \
-                      total_elems * ESZ);                    \
+    env->vstart = 0; /* Reset vstart */                      \
+    /* Set tail elements to 1s according to vta */           \
+    vext_set_elems_1s(vd, vta, (size_t)vl * ESZ,             \
+                      (size_t)total_elems * ESZ);            \
 }
 
 /* 8-bit reverse instructions */

@@ -3796,7 +3796,7 @@ static bool vrev_check(DisasContext *s, arg_rmr *a)
 static void finalize_rvv_inst(DisasContext *ctx)
 {
     mark_vs_dirty(ctx);
-    // ctx->vstart = true;
+    ctx->vstart = true;
 }
 
 static bool trans_vrev_v(DisasContext *s, arg_rmr *a)
